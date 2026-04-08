@@ -145,7 +145,8 @@ def calculate_population_far(dz: gpd.GeoDataFrame, threshold_km: float = 20) -> 
     Estimate the population living beyond a specified distance from the nearest hospital.
 
     This function identifies Data Zones where the nearest hospital exceeds a given
-    distance threshold and calculates the affected population by applying a boolean mask to the population field.
+    distance threshold and calculates the affected population by applying a boolean 
+    mask to the population field.
 
     Parameters
     ----------
