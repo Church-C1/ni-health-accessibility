@@ -6,6 +6,7 @@ including Data Zone visualisation, hospital markers and map legend elements.
 """
 
 import folium
+from folium.plugins import MarkerCluster
 
 
 def style_function(feature):
@@ -106,10 +107,12 @@ def add_datazones_layer(m, dz_wgs84):
 
 def add_hospital_markers(m, hospitals_wgs84):
     """
-    Add hospital locations to the interactive map as styled markers.
+    Add hospital locations to the interactive map as icon-based markers.
 
-    Hospital markers are displayed above polygon layers to ensure visibility
-    and include tooltips and popups showing hospital names.
+    Hospital locations are displayed using Folium markers with a medical-style
+    icon for improved visual clarity. Markers are grouped using a MarkerCluster
+    to reduce visual clutter at lower zoom levels. Each marker includes a styled
+    tooltip showing the hospital label and name.
 
     Parameters
     ----------
@@ -123,32 +126,22 @@ def add_hospital_markers(m, hospitals_wgs84):
     None
         Markers are added directly to the map.
     """
-    folium.map.CustomPane("hospital_markers").add_to(m)
-
-    m.get_root().html.add_child(folium.Element("""
-    <style>
-        .leaflet-pane.hospital_markers {
-            z-index: 650;
-        }
-    </style>
-    """))
-
-    hospital_group = folium.FeatureGroup(name="Hospitals").add_to(m)
+    hospital_group = MarkerCluster(name="Hospitals").add_to(m)
 
     for _, row in hospitals_wgs84.iterrows():
         hospital_name = row.get("name", "Unnamed hospital")
 
-        folium.CircleMarker(
+        folium.Marker(
             location=[row.geometry.y, row.geometry.x],
-            radius=5,
-            color="darkgreen",
-            weight=2,
-            fill=True,
-            fill_color="green",
-            fill_opacity=1,
-            tooltip=hospital_name,
-            popup=hospital_name,
-            pane="hospital_markers"
+            tooltip=folium.Tooltip(
+                f'<div style="font-size:12px;"><b>Hospital</b><br>{hospital_name}</div>',
+                sticky=False
+            ),
+            icon=folium.Icon(
+                color="green",
+                icon="plus-sign",
+                prefix="glyphicon"
+            )
         ).add_to(hospital_group)
 
 
@@ -157,7 +150,7 @@ def add_legend(m):
     Add a custom legend to the interactive map.
 
     The legend identifies affected and non-affected Data Zones
-    and shows the symbol used for hospital locations.
+    and shows the marker style used for hospital locations.
 
     Parameters
     ----------
@@ -173,7 +166,7 @@ def add_legend(m):
     <div style="
         position: fixed;
         bottom: 40px;
-        left: 40px;
+        left: 10px;
         z-index: 9999;
         font-size: 13px;
         background-color: white;
@@ -183,7 +176,7 @@ def add_legend(m):
         box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
         white-space: nowrap;
     ">
-    <b>Map key</b><br>
+    <b>Map legend</b><br>
 
     <div style="margin-top:6px;">
         <span style="
@@ -193,7 +186,7 @@ def add_legend(m):
             display:inline-block;
             margin-right:8px;
         "></span>
-        >20 km from hospital
+        More than 20 km from hospital
     </div>
 
     <div>
@@ -213,11 +206,13 @@ def add_legend(m):
             width:12px;
             height:12px;
             margin-right:8px;
-            background:green;
-            border:2px solid darkgreen;
-            border-radius:50%;
-            vertical-align:middle;
-        "></span>
+            color:green;
+            font-weight:bold;
+            text-align:center;
+            line-height:12px;
+        ">
+            +
+        </span>
         Hospital
     </div>
     </div>
@@ -227,11 +222,12 @@ def add_legend(m):
 
 def add_tooltip_style(m):
     """
-    Add custom CSS to improve tooltip formatting.
+    Add custom CSS to improve tooltip formatting and remove click-focus outlines.
 
     This styling prevents line wrapping in tooltip labels and values,
-    allowing the tooltip box to expand to fit longer text.
-    
+    allows the tooltip box to expand to fit longer text and removes
+    the visible focus outline that appears when map features are clicked.
+
     Parameters
     ----------
     m : folium.Map
@@ -248,6 +244,8 @@ def add_tooltip_style(m):
         max-width: none !important;
         width: auto !important;
         white-space: nowrap !important;
+        font-size: 12px;
+        padding: 6px 8px;
     }
 
     .leaflet-tooltip table {
@@ -259,6 +257,125 @@ def add_tooltip_style(m):
         white-space: nowrap !important;
         word-break: keep-all !important;
     }
+
+    .leaflet-interactive:focus {
+        outline: none !important;
+    }
+
+    path.leaflet-interactive:focus {
+        outline: none !important;
+    }
+
+    .leaflet-marker-icon:focus {
+        outline: none !important;
+    }
+
+    .leaflet-container a:focus {
+        outline: none !important;
+    }
     </style>
     """
     m.get_root().html.add_child(folium.Element(tooltip_css))
+
+
+def add_reset_button(m, center, zoom):
+    """
+    Add a reset view button to return the map to its original extent.
+
+    Parameters
+    ----------
+    m : folium.Map
+        Folium map object.
+    center : list
+        Initial map center [lat, lon].
+    zoom : int
+        Initial zoom level.
+
+    Returns
+    -------
+    None
+        The button is added directly to the map.
+    """
+    map_name = m.get_name()
+
+    reset_js = f"""
+    <script>
+    function resetMap() {{
+        {map_name}.setView([{center[0]}, {center[1]}], {zoom});
+    }}
+    </script>
+    """
+
+    button_html = """
+    <div style="
+        position: fixed;
+        top: 95px;
+        left: 10px;
+        z-index: 9999;
+    ">
+        <button onclick="resetMap()" style="
+            background-color: white;
+            border: 1px solid #888;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+        ">
+            Reset view
+        </button>
+    </div>
+    """
+
+    m.get_root().html.add_child(folium.Element(reset_js + button_html))
+
+
+def add_metric_scale_bar(m):
+    """
+    Add a metric-only scale bar to the interactive map.
+
+    This replaces the default Folium scale bar, displays distance
+    in kilometres only, and aligns the scale bar with other map elements.
+
+    Parameters
+    ----------
+    m : folium.Map
+        Folium map object.
+
+    Returns
+    -------
+    None
+        The scale bar is added directly to the map.
+    """
+    map_name = m.get_name()
+
+    scale_js = f"""
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {{
+        function attachScaleBar() {{
+            if (typeof {map_name} !== "undefined") {{
+                {map_name}.whenReady(function() {{
+                    L.control.scale({{
+                        position: "bottomleft",
+                        metric: true,
+                        imperial: false
+                    }}).addTo({map_name});
+                }});
+            }} else {{
+                setTimeout(attachScaleBar, 100);
+            }}
+        }}
+        attachScaleBar();
+    }});
+    </script>
+    """
+
+    scale_css = """
+    <style>
+    .leaflet-control-scale {
+        margin-left: 10px !important;
+    }
+    </style>
+    """
+
+    m.get_root().html.add_child(folium.Element(scale_js + scale_css))

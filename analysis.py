@@ -75,8 +75,8 @@ def clean_hospitals(hospitals: gpd.GeoDataFrame, dz: gpd.GeoDataFrame) -> gpd.Ge
     """
     Clean and standardise hospital geometries and align them with the study area.
 
-    This function removes invalid geometries, converts polygon geometries to
-    representative points, reprojects hospital locations to match the Data Zone CRS,
+    This function removes invalid geometries, converts hospital geometries to
+    representative points, reprojects hospital locations to match the Data Zone CRS
     and filters the dataset to include only hospitals within the study area.
 
     Parameters
@@ -106,8 +106,8 @@ def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.Geo
     """
     Calculate the distance from each Data Zone to its nearest hospital.
 
-    This function generates a representative point for each Data Zone polygon and
-    computes the minimum straight-line (Euclidean) distance to the nearest hospital.
+    This function creates a representative point for each Data Zone polygon and
+    identifies the nearest hospital using a spatial nearest-neighbour join.
     Distances are calculated in metres and converted to kilometres.
 
     Parameters
@@ -120,23 +120,24 @@ def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.Geo
     Returns
     -------
     gpd.GeoDataFrame
-        Updated GeoDataFrame with two new columns:
+        Updated GeoDataFrame with:
         - 'nearest_hospital_m': distance to nearest hospital in metres
         - 'nearest_hospital_km': distance to nearest hospital in kilometres
     """
+    dz = dz.copy()
     dz["zone_point"] = dz.geometry.representative_point()
 
-    dz_points = dz.copy()
-    dz_points = dz_points.set_geometry("zone_point")
+    dz_points = dz.set_geometry("zone_point")
 
-    distances = []
+    nearest = gpd.sjoin_nearest(
+        dz_points,
+        hospitals[["geometry"]],
+        how="left",
+        distance_col="nearest_hospital_m"
+    )
 
-    for point in dz_points.geometry:
-        nearest_distance = hospitals.distance(point).min()
-        distances.append(nearest_distance)
-
-    dz["nearest_hospital_m"] = distances
-    dz["nearest_hospital_km"] = dz["nearest_hospital_m"] / 1000
+    dz["nearest_hospital_m"] = nearest["nearest_hospital_m"].values
+    dz["nearest_hospital_km"] = (dz["nearest_hospital_m"] / 1000).round(2)
 
     return dz
 
