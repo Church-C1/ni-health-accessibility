@@ -1,5 +1,5 @@
 """
-Core analysis functions for the Northern Ireland healthcare accessibility project.
+Core Analysis Functions for the Northern Ireland Healthcare Accessibility Project.
 """
 
 import geopandas as gpd
@@ -144,7 +144,7 @@ def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.Geo
 
     if dz.crs.is_geographic:
         raise ValueError(
-            "Data Zones are in a geographic CRS (degrees)."
+            "Data Zones are in a geographic CRS (degrees). "
             "Reproject to a projected CRS (e.g. EPSG:29902) before calculating distances."
         )
 
@@ -196,3 +196,154 @@ def calculate_population_far(dz: gpd.GeoDataFrame, threshold_km: float = 20) -> 
     dz["population_far"] = dz["All usual residents"].where(dz["affected"], 0)
 
     return dz
+
+
+def summarise_by_region(dz: gpd.GeoDataFrame, region_col: str) -> pd.DataFrame:
+    """
+    Summarise healthcare accessibility results by a regional grouping.
+
+    This function groups Data Zones by a specified regional column, then
+    calculates total population, affected population, total number of
+    Data Zones, affected number of Data Zones and the percentage affected
+    by both population and Data Zone count.
+
+    Parameters
+    ----------
+    dz : gpd.GeoDataFrame
+        GeoDataFrame containing Data Zone geometries and accessibility results.
+    region_col : str
+        Name of the column used to group the summaries
+        (e.g. 'county_name' or 'LGD2014_nm').
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing summary statistics for each region.
+    """
+    required_cols = [region_col, "All usual residents", "population_far", "affected"]
+    missing = [col for col in required_cols if col not in dz.columns]
+
+    if missing:
+        raise KeyError(f"Missing required columns for regional summary: {missing}")
+
+    if dz.empty:
+        raise ValueError("Input Data Zone dataset is empty.")
+
+    summary = (
+        dz.groupby(region_col)
+        .agg(
+            total_population=("All usual residents", "sum"),
+            affected_population=("population_far", "sum"),
+            total_datazones=("affected", "size"),
+            affected_datazones=("affected", "sum")
+        )
+        .reset_index()
+    )
+
+    summary["pct_population_affected"] = (
+        summary["affected_population"] / summary["total_population"] * 100
+    ).round(2)
+
+    summary["pct_datazones_affected"] = (
+        summary["affected_datazones"] / summary["total_datazones"] * 100
+    ).round(2)
+
+    summary = summary.sort_values(
+        by="affected_population",
+        ascending=False
+    ).reset_index(drop=True)
+
+    return summary
+
+
+def format_summary_table(summary_df: pd.DataFrame, region_label: str) -> pd.DataFrame:
+    """
+    Format a regional summary table for presentation.
+
+    Parameters
+    ----------
+    summary_df : pd.DataFrame
+        Summary DataFrame returned by summarise_by_region().
+    region_label : str
+        Display label for the grouping column (e.g. 'County' or 'Council').
+
+    Returns
+    -------
+    pd.DataFrame
+        Formatted table with readable column names and a 1-based index.
+    """
+    formatted = summary_df.copy()
+
+    first_col = formatted.columns[0]
+
+    formatted = formatted.rename(columns={
+        first_col: region_label,
+        "total_population": "Total Population",
+        "affected_population": "Affected Population",
+        "total_datazones": "Total Zones",
+        "affected_datazones": "Affected Zones",
+        "pct_population_affected": "% Pop. Affected",
+        "pct_datazones_affected": "% Zones Affected"
+    })
+
+    formatted.index = formatted.index + 1
+
+    formatted["% Pop. Affected"] = formatted["% Pop. Affected"].map("{:.2f}".format)
+    formatted["% Zones Affected"] = formatted["% Zones Affected"].map("{:.2f}".format)
+
+    return formatted
+
+
+def get_worst_datazones(dz: gpd.GeoDataFrame, top_n: int = 10) -> pd.DataFrame:
+    """
+    Return the most remote Data Zones by nearest hospital distance.
+
+    Parameters
+    ----------
+    dz : gpd.GeoDataFrame
+        GeoDataFrame containing formatted Data Zone fields.
+    top_n : int, optional
+        Number of rows to return (default = 10).
+
+    Returns
+    -------
+    pd.DataFrame
+        Table of the most remote Data Zones.
+    """
+    required_cols = [
+        "data_zone_name",
+        "county_name",
+        "LGD2014_nm",
+        "nearest_hospital_km",
+        "All usual residents",
+        "population_far"
+    ]
+    missing = [col for col in required_cols if col not in dz.columns]
+
+    if missing:
+        raise KeyError(f"Missing required columns for worst Data Zone table: {missing}")
+
+    if dz.empty:
+        raise ValueError("Input Data Zone dataset is empty.")
+
+    worst = dz[
+        required_cols
+    ].sort_values(
+        by="nearest_hospital_km",
+        ascending=False
+    ).head(top_n).reset_index(drop=True)
+
+    worst = worst.rename(columns={
+        "data_zone_name": "Data Zone",
+        "county_name": "County",
+        "LGD2014_nm": "Council",
+        "nearest_hospital_km": "Distance to Nearest Hospital (km)",
+        "All usual residents": "Population",
+        "population_far": "Population Beyond 20 km"
+    })
+
+    worst.index = worst.index + 1
+
+    worst["Distance to Nearest Hospital (km)"] = worst["Distance to Nearest Hospital (km)"].round(2)
+
+    return worst

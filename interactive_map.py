@@ -1,5 +1,5 @@
 """
-Interactive map functions for the Northern Ireland healthcare accessibility project.
+Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
 
 This module contains functions used to construct and style an interactive Folium map,
 including Data Zone visualisation, hospital markers and map legend elements.
