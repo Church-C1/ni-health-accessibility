@@ -60,8 +60,9 @@ def add_datazones_layer(m, dz_wgs84):
     Add Data Zone polygons to the interactive map with tooltip information.
 
     Tooltips display key attributes including Data Zone name, Data Zone code,
-    county, local council, distance to the nearest hospital (in km) and Population 
-    beyond 20 km.
+    county, local council, distance to the nearest hospital (in km) and the
+    population living beyond 20 km. The function also validates that all required
+    fields are present before creating the map layer.
 
     Parameters
     ----------
@@ -75,6 +76,22 @@ def add_datazones_layer(m, dz_wgs84):
     None
         The layer is added directly to the map.
     """
+
+    required_fields = [
+        "data_zone_name",
+        "DZ2021_cd",
+        "county_name",
+        "LGD2014_nm",
+        "nearest_hospital_km",
+        "population_far",
+        "affected"
+    ]
+
+    missing = [col for col in required_fields if col not in dz_wgs84.columns]
+
+    if missing:
+        raise KeyError(f"Missing required columns for map layer: {missing}")
+
     folium.GeoJson(
         dz_wgs84,
         style_function=style_function,
@@ -222,11 +239,14 @@ def add_legend(m):
 
 def add_tooltip_style(m):
     """
-    Add custom CSS to improve tooltip formatting and remove click-focus outlines.
+    Add custom CSS to improve tooltip formatting, remove click-focus outlines
+    and define reusable map UI styling.
 
     This styling prevents line wrapping in tooltip labels and values,
-    allows the tooltip box to expand to fit longer text and removes
-    the visible focus outline that appears when map features are clicked.
+    allows the tooltip box to expand to fit longer text, removes
+    visible focus outlines when map features are clicked and
+    defines positioning for custom interface elements such as
+    the reset button.
 
     Parameters
     ----------
@@ -273,6 +293,14 @@ def add_tooltip_style(m):
     .leaflet-container a:focus {
         outline: none !important;
     }
+
+    /* Reset button positioning */
+    .map-btn {
+        position: fixed;
+        top: 95px;
+        left: 10px;
+        z-index: 9999;
+    }
     </style>
     """
     m.get_root().html.add_child(folium.Element(tooltip_css))
@@ -282,12 +310,15 @@ def add_reset_button(m, center, zoom):
     """
     Add a reset view button to return the map to its original extent.
 
+    The button uses a reusable CSS class for positioning, ensuring
+    consistent styling and easier maintenance.
+
     Parameters
     ----------
     m : folium.Map
         Folium map object.
     center : list
-        Initial map center [lat, lon].
+        Initial map centre [lat, lon].
     zoom : int
         Initial zoom level.
 
@@ -307,12 +338,7 @@ def add_reset_button(m, center, zoom):
     """
 
     button_html = """
-    <div style="
-        position: fixed;
-        top: 95px;
-        left: 10px;
-        z-index: 9999;
-    ">
+    <div class="map-btn">
         <button onclick="resetMap()" style="
             background-color: white;
             border: 1px solid #888;

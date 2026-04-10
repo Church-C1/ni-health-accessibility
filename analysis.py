@@ -6,6 +6,7 @@ import geopandas as gpd
 import pandas as pd
 import osmnx as ox
 
+
 def load_and_merge_datazones(dz_path: str, pop_path: str) -> gpd.GeoDataFrame:
     """
     Load Northern Ireland Data Zone boundaries and merge them with population data.
@@ -43,6 +44,7 @@ def load_and_merge_datazones(dz_path: str, pop_path: str) -> gpd.GeoDataFrame:
 
     return dz
 
+
 def get_hospitals_from_osm(dz: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     Retrieve hospital locations from OpenStreetMap within the extent of the study area.
@@ -71,13 +73,15 @@ def get_hospitals_from_osm(dz: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     return hospitals
 
+    
 def clean_hospitals(hospitals: gpd.GeoDataFrame, dz: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     Clean and standardise hospital geometries and align them with the study area.
 
-    This function removes invalid geometries, converts hospital geometries to
-    representative points, reprojects hospital locations to match the Data Zone CRS
-    and filters the dataset to include only hospitals within the study area.
+    This function removes invalid geometries, ensures only valid geometry types
+    are retained, converts all hospital geometries to representative points,
+    reprojects hospital locations to match the Data Zone CRS and filters the
+    dataset to include only hospitals within the study area.
 
     Parameters
     ----------
@@ -92,15 +96,19 @@ def clean_hospitals(hospitals: gpd.GeoDataFrame, dz: gpd.GeoDataFrame) -> gpd.Ge
         Cleaned GeoDataFrame of hospital point locations within the study area.
     """
     hospitals = hospitals[hospitals.geometry.notnull()]
+
     hospitals = hospitals[hospitals.geometry.type.isin(["Point", "Polygon", "MultiPolygon"])]
 
     hospitals["geometry"] = hospitals.geometry.representative_point()
 
     hospitals = hospitals.to_crs(dz.crs)
 
-    hospitals = hospitals[hospitals.intersects(dz.unary_union)]
+    study_area = dz.union_all() if hasattr(dz, "union_all") else dz.unary_union
+
+    hospitals = hospitals[hospitals.intersects(study_area)]
 
     return hospitals
+
 
 def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
@@ -109,6 +117,11 @@ def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.Geo
     This function creates a representative point for each Data Zone polygon and
     identifies the nearest hospital using a spatial nearest-neighbour join.
     Distances are calculated in metres and converted to kilometres.
+
+    IMPORTANT:
+    The input GeoDataFrames must be in a projected coordinate reference system (CRS)
+    with units in metres. If a geographic CRS (e.g. WGS84 / EPSG:4326) is detected,
+    the function will raise an error to prevent incorrect distance calculations.
 
     Parameters
     ----------
@@ -125,8 +138,20 @@ def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.Geo
         - 'nearest_hospital_km': distance to nearest hospital in kilometres
     """
     dz = dz.copy()
-    dz["zone_point"] = dz.geometry.representative_point()
 
+    if dz.crs is None:
+        raise ValueError("Data Zones CRS is undefined.")
+
+    if dz.crs.is_geographic:
+        raise ValueError(
+            "Data Zones are in a geographic CRS (degrees)."
+            "Reproject to a projected CRS (e.g. EPSG:29902) before calculating distances."
+        )
+
+    if hospitals.crs != dz.crs:
+        hospitals = hospitals.to_crs(dz.crs)
+
+    dz["zone_point"] = dz.geometry.representative_point()
     dz_points = dz.set_geometry("zone_point")
 
     nearest = gpd.sjoin_nearest(
@@ -141,13 +166,14 @@ def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.Geo
 
     return dz
 
+    
 def calculate_population_far(dz: gpd.GeoDataFrame, threshold_km: float = 20) -> gpd.GeoDataFrame:
     """
     Estimate the population living beyond a specified distance from the nearest hospital.
 
     This function identifies Data Zones where the nearest hospital exceeds a given
-    distance threshold and calculates the affected population by applying a boolean 
-    mask to the population field.
+    distance threshold and calculates the affected population. It also creates a
+    boolean 'affected' column used for mapping and classification.
 
     Parameters
     ----------
@@ -159,9 +185,14 @@ def calculate_population_far(dz: gpd.GeoDataFrame, threshold_km: float = 20) -> 
     Returns
     -------
     gpd.GeoDataFrame
-        Updated GeoDataFrame with a new column:
-        - 'population_far': estimated number of residents living beyond the threshold distance
+        Updated GeoDataFrame with:
+        - 'affected': boolean indicating if the Data Zone is beyond the threshold
+        - 'population_far': number of residents living beyond the threshold distance
     """
-    dz["population_far"] = dz["All usual residents"] * (dz["nearest_hospital_km"] > threshold_km)
+    dz = dz.copy()
+
+    dz["affected"] = dz["nearest_hospital_km"] > threshold_km
+
+    dz["population_far"] = dz["All usual residents"].where(dz["affected"], 0)
 
     return dz
