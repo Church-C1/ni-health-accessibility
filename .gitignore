@@ -209,6 +209,3 @@ __marimo__/
 # Project-specific large outputs
 interactive_healthcare_access_map.html
 *.html
-
-# Optional (recommended for large notebooks)
-*.ipynb
