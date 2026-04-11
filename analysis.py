@@ -71,6 +71,11 @@ def get_hospitals_from_osm(dz: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         tags={"amenity": "hospital"}
     )
 
+    if hospitals.empty:
+        raise ValueError(
+            "No hospital features were returned from OpenStreetMap for the study area."
+        )
+
     return hospitals
 
     
@@ -106,6 +111,11 @@ def clean_hospitals(hospitals: gpd.GeoDataFrame, dz: gpd.GeoDataFrame) -> gpd.Ge
     study_area = dz.union_all() if hasattr(dz, "union_all") else dz.unary_union
 
     hospitals = hospitals[hospitals.intersects(study_area)]
+
+    if hospitals.empty:
+        raise ValueError(
+            "No valid hospital geometries remain after cleaning and filtering."
+        )
 
     return hospitals
 
@@ -270,7 +280,8 @@ def format_summary_table(summary_df: pd.DataFrame, region_label: str) -> pd.Data
     Returns
     -------
     pd.DataFrame
-        Formatted table with readable column names and a 1-based index.
+        Formatted table with readable column names,
+        formatted percentage strings and a 1-based index.
     """
     formatted = summary_df.copy()
 

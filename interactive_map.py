@@ -109,7 +109,7 @@ def add_datazones_layer(m, dz_wgs84):
                 "Data Zone Name:",
                 "Data Zone Code:",
                 "County:",
-                "Local Council:",
+                "Council:",
                 "Distance to Nearest Hospital (km):",
                 "Population Beyond 20 km:"
             ],
