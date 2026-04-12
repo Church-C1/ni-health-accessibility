@@ -1,8 +1,13 @@
 """
-Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
+Euclidean Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
 
-This module contains functions used to construct and style an interactive Folium map,
-including Data Zone visualisation, hospital markers and map legend elements.
+This module contains functions used to construct and style an interactive Folium map
+for the Euclidean accessibility analysis.
+
+The map visualises Data Zones based on straight-line (Euclidean) distance to the
+nearest hospital, highlighting areas located more than 20 km away. It also includes
+hospital markers, tooltips and custom interface elements to support exploration of
+Euclidean accessibility results.
 """
 
 import folium
@@ -11,10 +16,10 @@ from folium.plugins import MarkerCluster
 
 def style_function(feature):
     """
-    Define the visual style for Data Zones based on accessibility status.
+    Define the visual style for Data Zones based on Euclidean accessibility status.
 
-    Data Zones located more than 20 km from the nearest hospital are highlighted,
-    while all other zones are displayed with a neutral colour.
+    Data Zones located more than 20 km from the nearest hospital are highlighted
+    in red, while all other zones are displayed using a neutral colour.
 
     Parameters
     ----------
@@ -57,12 +62,14 @@ def highlight_function(feature):
 
 def add_datazones_layer(m, dz_wgs84):
     """
-    Add Data Zone polygons to the interactive map with tooltip information.
+    Add Data Zone polygons to the interactive map with Euclidean accessibility attributes.
 
     Tooltips display key attributes including Data Zone name, Data Zone code,
-    county, local council, distance to the nearest hospital (in km) and the
-    population living beyond 20 km. The function also validates that all required
-    fields are present before creating the map layer.
+    local council, Euclidean distance to the nearest hospital (in km)
+    and the population living beyond 20 km.
+
+    The function validates that all required fields are present before creating
+    the map layer.
 
     Parameters
     ----------
@@ -78,9 +85,8 @@ def add_datazones_layer(m, dz_wgs84):
     """
 
     required_fields = [
-        "data_zone_name",
+        "DZ2021_nm",
         "DZ2021_cd",
-        "county_name",
         "LGD2014_nm",
         "nearest_hospital_km",
         "population_far",
@@ -98,9 +104,8 @@ def add_datazones_layer(m, dz_wgs84):
         highlight_function=highlight_function,
         tooltip=folium.GeoJsonTooltip(
             fields=[
-                "data_zone_name",
+                "DZ2021_nm",
                 "DZ2021_cd",
-                "county_name",
                 "LGD2014_nm",
                 "nearest_hospital_km",
                 "population_far"
@@ -108,7 +113,6 @@ def add_datazones_layer(m, dz_wgs84):
             aliases=[
                 "Data Zone Name:",
                 "Data Zone Code:",
-                "County:",
                 "Council:",
                 "Distance to Nearest Hospital (km):",
                 "Population Beyond 20 km:"
@@ -164,10 +168,11 @@ def add_hospital_markers(m, hospitals_wgs84):
 
 def add_legend(m):
     """
-    Add a custom legend to the interactive map.
+    Add a custom legend for Euclidean accessibility results.
 
-    The legend identifies affected and non-affected Data Zones
-    and shows the marker style used for hospital locations.
+    The legend identifies Data Zones located more than 20 km from the nearest
+    hospital and those within 20 km, along with the symbol used for hospital
+    locations.
 
     Parameters
     ----------
@@ -239,14 +244,11 @@ def add_legend(m):
 
 def add_tooltip_style(m):
     """
-    Add custom CSS to improve tooltip formatting, remove click-focus outlines
-    and define reusable map UI styling.
+    Add custom CSS to improve tooltip formatting and interactive behaviour.
 
-    This styling prevents line wrapping in tooltip labels and values,
-    allows the tooltip box to expand to fit longer text, removes
-    visible focus outlines when map features are clicked and
-    defines positioning for custom interface elements such as
-    the reset button.
+    This styling enhances tooltip readability, prevents text wrapping,
+    removes focus outlines and defines reusable UI styling for the
+    Euclidean interactive map.
 
     Parameters
     ----------
@@ -361,7 +363,7 @@ def add_metric_scale_bar(m):
     Add a metric-only scale bar to the interactive map.
 
     This replaces the default Folium scale bar, displays distance
-    in kilometres only, and aligns the scale bar with other map elements.
+    in kilometres only and aligns the scale bar with other map elements.
 
     Parameters
     ----------

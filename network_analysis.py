@@ -1,5 +1,11 @@
 """
-Road Network Analysis Functions for the Northern Ireland Healthcare Accessibility Project.
+Road Network Preparation Functions for the Northern Ireland Healthcare Accessibility Project.
+
+This module contains functions used to load, clean and prepare the road network
+dataset for use in the network-based accessibility analysis.
+
+The functions focus on filtering transport data, preparing geometries and
+calculating segment lengths required for cost-distance modelling.
 """
 
 import geopandas as gpd
@@ -73,7 +79,7 @@ def prepare_road_geometries(roads: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     This function explodes multipart geometries into individual features,
     removes null geometries and retains only LineString features suitable
-    for network construction.
+    for network building.
 
     Parameters
     ----------
@@ -97,3 +103,74 @@ def prepare_road_geometries(roads: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         raise ValueError("No LineString road geometries remain after preparation.")
 
     return roads
+
+
+def calculate_road_segment_length(roads: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Calculate the length of each road segment in metres and kilometres.
+
+    This function adds segment length fields to a prepared road network
+    GeoDataFrame. The input data must use a projected coordinate reference
+    system with units in metres.
+
+    Parameters
+    ----------
+    roads : gpd.GeoDataFrame
+        GeoDataFrame containing prepared LineString road segments.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Updated GeoDataFrame with:
+        - 'segment_length_m': road segment length in metres
+        - 'segment_length_km': road segment length in kilometres
+    """
+    roads = roads.copy()
+
+    if roads.crs is None:
+        raise ValueError("Road network CRS is undefined.")
+
+    if roads.crs.is_geographic:
+        raise ValueError(
+            "Road network is in a geographic CRS (degrees). "
+            "Reproject to a projected CRS before calculating segment lengths."
+        )
+
+    roads["segment_length_m"] = roads.geometry.length
+    roads["segment_length_km"] = (roads["segment_length_m"] / 1000).round(3)
+
+    if roads["segment_length_m"].isna().all():
+        raise ValueError("Segment length calculation failed for all road geometries.")
+
+    return roads
+
+
+def remove_short_segments(
+    roads: gpd.GeoDataFrame,
+    min_length_m: float = 1.0
+) -> gpd.GeoDataFrame:
+    """
+    Remove very short road segments from the network.
+
+    This function filters out segments below a minimum length threshold,
+    which are typically artefacts of data processing and can negatively
+    affect network analysis.
+
+    Parameters
+    ----------
+    roads : gpd.GeoDataFrame
+        GeoDataFrame containing road segments with length attributes.
+    min_length_m : float, optional
+        Minimum segment length in metres (default = 1.0).
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Cleaned GeoDataFrame with short segments removed.
+    """
+    roads_clean = roads[roads["segment_length_m"] >= min_length_m].copy()
+
+    if roads_clean.empty:
+        raise ValueError("All road segments were removed during short-segment filtering.")
+
+    return roads_clean
