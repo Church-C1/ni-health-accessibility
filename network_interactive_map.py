@@ -1,25 +1,25 @@
 """
-Euclidean Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
+Network Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
 
 This module contains functions used to construct and style an interactive Folium map
-for the Euclidean accessibility analysis.
+for the network-based accessibility analysis.
 
-The map visualises Data Zones based on straight-line (Euclidean) distance to the
-nearest hospital, highlighting areas located more than 20 km away. It also includes
-hospital markers, tooltips and custom interface elements to support exploration of
-Euclidean accessibility results.
+The map visualises Data Zones based on the network-based accessibility index,
+highlighting zones classified as having relatively poor accessibility under the
+cost-distance model. It also includes hospital markers, tooltips and custom
+interface elements to support exploration of network-based accessibility results.
 """
 
 import folium
 from folium.plugins import MarkerCluster
 
 
-def style_function_euclidean(feature):
+def style_function_network(feature):
     """
-    Define the visual style for Data Zones based on Euclidean accessibility status.
+    Define the visual style for Data Zones based on network-based accessibility status.
 
-    Data Zones located more than 20 km from the nearest hospital are highlighted
-    in red, while all other zones are displayed using a neutral colour.
+    Data Zones classified as having relatively poor network-based accessibility
+    are highlighted in red, while all other zones are displayed using a neutral colour.
 
     Parameters
     ----------
@@ -32,14 +32,14 @@ def style_function_euclidean(feature):
         Dictionary of style properties applied to the feature.
     """
     return {
-        "fillColor": "red" if feature["properties"]["affected"] else "#cfe8f3",
+        "fillColor": "red" if feature["properties"]["affected_network"] else "#cfe8f3",
         "color": "#888888",
         "weight": 0.25,
-        "fillOpacity": 0.7 if feature["properties"]["affected"] else 0.45
+        "fillOpacity": 0.7 if feature["properties"]["affected_network"] else 0.45
     }
 
 
-def highlight_function_euclidean(feature):
+def highlight_function_network(feature):
     """
     Define the highlight style for Data Zones when hovered over.
 
@@ -60,13 +60,13 @@ def highlight_function_euclidean(feature):
     }
 
 
-def add_datazones_layer_euclidean(m, dz_wgs84):
+def add_datazones_layer_network(m, dz_wgs84):
     """
-    Add Data Zone polygons to the interactive map with Euclidean accessibility attributes.
+    Add Data Zone polygons to the interactive map with network-based accessibility attributes.
 
     Tooltips display key attributes including Data Zone name, Data Zone code,
-    local council, Euclidean distance to the nearest hospital (in km)
-    and the population living beyond 20 km.
+    local council, network-based accessibility index and the population living
+    in Data Zones classified as having poor network-based accessibility.
 
     The function validates that all required fields are present before creating
     the map layer.
@@ -88,9 +88,9 @@ def add_datazones_layer_euclidean(m, dz_wgs84):
         "DZ2021_nm",
         "DZ2021_cd",
         "LGD2014_nm",
-        "nearest_hospital_km",
-        "population_far",
-        "affected"
+        "accessibility_index",
+        "population_far_network",
+        "affected_network"
     ]
 
     missing = [col for col in required_fields if col not in dz_wgs84.columns]
@@ -98,24 +98,27 @@ def add_datazones_layer_euclidean(m, dz_wgs84):
     if missing:
         raise KeyError(f"Missing required columns for map layer: {missing}")
 
+    dz_wgs84 = dz_wgs84.copy()
+    dz_wgs84["accessibility_index"] = dz_wgs84["accessibility_index"].round(3)
+
     folium.GeoJson(
         dz_wgs84,
-        style_function=style_function_euclidean,
-        highlight_function=highlight_function_euclidean,
+        style_function=style_function_network,
+        highlight_function=highlight_function_network,
         tooltip=folium.GeoJsonTooltip(
             fields=[
                 "DZ2021_nm",
                 "DZ2021_cd",
                 "LGD2014_nm",
-                "nearest_hospital_km",
-                "population_far"
+                "accessibility_index",
+                "population_far_network"
             ],
             aliases=[
                 "Data Zone Name:",
                 "Data Zone Code:",
                 "Council:",
-                "Distance to Nearest Hospital (km):",
-                "Population Beyond 20 km:"
+                "Accessibility Index:",
+                "Population in Poor-Access Zones:"
             ],
             localize=True,
             sticky=False,
@@ -126,7 +129,7 @@ def add_datazones_layer_euclidean(m, dz_wgs84):
     ).add_to(m)
 
 
-def add_hospital_markers_euclidean(m, hospitals_wgs84):
+def add_hospital_markers_network(m, hospitals_wgs84):
     """
     Add hospital locations to the interactive map as icon-based markers.
 
@@ -166,13 +169,13 @@ def add_hospital_markers_euclidean(m, hospitals_wgs84):
         ).add_to(hospital_group)
 
 
-def add_legend_euclidean(m):
+def add_legend_network(m):
     """
-    Add a custom legend for Euclidean accessibility results.
+    Add a custom legend for network-based accessibility results.
 
-    The legend identifies Data Zones located more than 20 km from the nearest
-    hospital and those within 20 km, along with the symbol used for hospital
-    locations.
+    The legend identifies Data Zones classified as having poor network-based
+    accessibility and those not classified as poor-access zones, along with
+    the symbol used for hospital locations.
 
     Parameters
     ----------
@@ -208,7 +211,7 @@ def add_legend_euclidean(m):
             display:inline-block;
             margin-right:8px;
         "></span>
-        More than 20 km from hospital
+        Poor network-based accessibility
     </div>
 
     <div>
@@ -219,7 +222,7 @@ def add_legend_euclidean(m):
             display:inline-block;
             margin-right:8px;
         "></span>
-        Within 20 km
+        Other Data Zones
     </div>
 
     <div style="margin-top:4px;">
@@ -242,13 +245,13 @@ def add_legend_euclidean(m):
     m.get_root().html.add_child(folium.Element(legend_html))
 
 
-def add_tooltip_style_euclidean(m):
+def add_tooltip_style_network(m):
     """
     Add custom CSS to improve tooltip formatting and interactive behaviour.
 
     This styling enhances tooltip readability, prevents text wrapping,
     removes focus outlines and defines reusable UI styling for the
-    Euclidean interactive map.
+    network interactive map.
 
     Parameters
     ----------
@@ -308,7 +311,7 @@ def add_tooltip_style_euclidean(m):
     m.get_root().html.add_child(folium.Element(tooltip_css))
 
 
-def add_reset_button_euclidean(m, center, zoom):
+def add_reset_button_network(m, center, zoom):
     """
     Add a reset view button to return the map to its original extent.
 
@@ -358,7 +361,7 @@ def add_reset_button_euclidean(m, center, zoom):
     m.get_root().html.add_child(folium.Element(reset_js + button_html))
 
 
-def add_metric_scale_bar_euclidean(m):
+def add_metric_scale_bar_network(m):
     """
     Add a metric-only scale bar to the interactive map.
 

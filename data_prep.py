@@ -122,3 +122,62 @@ def clean_hospitals(hospitals: gpd.GeoDataFrame, dz: gpd.GeoDataFrame) -> gpd.Ge
         )
 
     return hospitals
+
+
+def add_county_names_from_boundaries(
+    dz: gpd.GeoDataFrame,
+    counties: gpd.GeoDataFrame
+) -> gpd.GeoDataFrame:
+    """
+    Assign county names to Data Zones using a spatial join.
+    """
+
+    dz = dz.copy()
+
+    dz_points = dz.copy()
+    dz_points["geometry"] = dz_points.geometry.representative_point()
+
+    dz_counties = gpd.sjoin(
+        dz_points,
+        counties,
+        how="left",
+        predicate="within"
+    )
+
+    dz["county_name"] = dz_counties["NAME"].str.title().values
+
+    return dz
+
+
+def add_county_names(
+    df: gpd.GeoDataFrame,
+    source_df: gpd.GeoDataFrame
+) -> gpd.GeoDataFrame:
+    """
+    Add county names to a dataset using the Data Zone identifier.
+
+    Parameters
+    ----------
+    df : gpd.GeoDataFrame
+        Target dataset (e.g. network results).
+    source_df : gpd.GeoDataFrame
+        Dataset containing 'county_name' (e.g. dz_folium).
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Updated dataset with county names added.
+    """
+
+    if "county_name" not in source_df.columns:
+        raise KeyError("Source dataset does not contain 'county_name'.")
+
+    df = df.copy()
+
+    df = df.merge(
+        source_df[["DZ2021_cd", "county_name"]],
+        on="DZ2021_cd",
+        how="left"
+    )
+
+    return df
