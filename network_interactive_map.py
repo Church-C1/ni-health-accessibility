@@ -1,20 +1,25 @@
 """
-Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
+Network Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
 
-This module contains functions used to construct and style an interactive Folium map,
-including Data Zone visualisation, hospital markers and map legend elements.
+This module contains functions used to construct and style an interactive Folium map
+for the network-based accessibility analysis.
+
+The map visualises Data Zones based on the network-based accessibility index,
+highlighting zones classified as having relatively poor accessibility under the
+cost-distance model. It also includes hospital markers, tooltips and custom
+interface elements to support exploration of network-based accessibility results.
 """
 
 import folium
 from folium.plugins import MarkerCluster
 
 
-def style_function(feature):
+def style_function_network(feature):
     """
-    Define the visual style for Data Zones based on accessibility status.
+    Define the visual style for Data Zones based on network-based accessibility status.
 
-    Data Zones located more than 20 km from the nearest hospital are highlighted,
-    while all other zones are displayed with a neutral colour.
+    Data Zones classified as having relatively poor network-based accessibility
+    are highlighted in red, while all other zones are displayed using a neutral colour.
 
     Parameters
     ----------
@@ -27,14 +32,14 @@ def style_function(feature):
         Dictionary of style properties applied to the feature.
     """
     return {
-        "fillColor": "red" if feature["properties"]["affected"] else "#cfe8f3",
+        "fillColor": "red" if feature["properties"]["affected_network"] else "#cfe8f3",
         "color": "#888888",
         "weight": 0.25,
-        "fillOpacity": 0.7 if feature["properties"]["affected"] else 0.45
+        "fillOpacity": 0.7 if feature["properties"]["affected_network"] else 0.45
     }
 
 
-def highlight_function(feature):
+def highlight_function_network(feature):
     """
     Define the highlight style for Data Zones when hovered over.
 
@@ -55,14 +60,16 @@ def highlight_function(feature):
     }
 
 
-def add_datazones_layer(m, dz_wgs84):
+def add_datazones_layer_network(m, dz_wgs84):
     """
-    Add Data Zone polygons to the interactive map with tooltip information.
+    Add Data Zone polygons to the interactive map with network-based accessibility attributes.
 
     Tooltips display key attributes including Data Zone name, Data Zone code,
-    county, local council, distance to the nearest hospital (in km) and the
-    population living beyond 20 km. The function also validates that all required
-    fields are present before creating the map layer.
+    local council, network-based accessibility index and the population living
+    in Data Zones classified as having poor network-based accessibility.
+
+    The function validates that all required fields are present before creating
+    the map layer.
 
     Parameters
     ----------
@@ -78,13 +85,12 @@ def add_datazones_layer(m, dz_wgs84):
     """
 
     required_fields = [
-        "data_zone_name",
+        "DZ2021_nm",
         "DZ2021_cd",
-        "county_name",
         "LGD2014_nm",
-        "nearest_hospital_km",
-        "population_far",
-        "affected"
+        "accessibility_index",
+        "population_far_network",
+        "affected_network"
     ]
 
     missing = [col for col in required_fields if col not in dz_wgs84.columns]
@@ -92,26 +98,27 @@ def add_datazones_layer(m, dz_wgs84):
     if missing:
         raise KeyError(f"Missing required columns for map layer: {missing}")
 
+    dz_wgs84 = dz_wgs84.copy()
+    dz_wgs84["accessibility_index"] = dz_wgs84["accessibility_index"].round(3)
+
     folium.GeoJson(
         dz_wgs84,
-        style_function=style_function,
-        highlight_function=highlight_function,
+        style_function=style_function_network,
+        highlight_function=highlight_function_network,
         tooltip=folium.GeoJsonTooltip(
             fields=[
-                "data_zone_name",
+                "DZ2021_nm",
                 "DZ2021_cd",
-                "county_name",
                 "LGD2014_nm",
-                "nearest_hospital_km",
-                "population_far"
+                "accessibility_index",
+                "population_far_network"
             ],
             aliases=[
                 "Data Zone Name:",
                 "Data Zone Code:",
-                "County:",
-                "Local Council:",
-                "Distance to Nearest Hospital (km):",
-                "Population Beyond 20 km:"
+                "Council:",
+                "Accessibility Index:",
+                "Population in Poor-Access Zones:"
             ],
             localize=True,
             sticky=False,
@@ -122,7 +129,7 @@ def add_datazones_layer(m, dz_wgs84):
     ).add_to(m)
 
 
-def add_hospital_markers(m, hospitals_wgs84):
+def add_hospital_markers_network(m, hospitals_wgs84):
     """
     Add hospital locations to the interactive map as icon-based markers.
 
@@ -162,12 +169,13 @@ def add_hospital_markers(m, hospitals_wgs84):
         ).add_to(hospital_group)
 
 
-def add_legend(m):
+def add_legend_network(m):
     """
-    Add a custom legend to the interactive map.
+    Add a custom legend for network-based accessibility results.
 
-    The legend identifies affected and non-affected Data Zones
-    and shows the marker style used for hospital locations.
+    The legend identifies Data Zones classified as having poor network-based
+    accessibility and those not classified as poor-access zones, along with
+    the symbol used for hospital locations.
 
     Parameters
     ----------
@@ -203,7 +211,7 @@ def add_legend(m):
             display:inline-block;
             margin-right:8px;
         "></span>
-        More than 20 km from hospital
+        Poor network-based accessibility
     </div>
 
     <div>
@@ -214,7 +222,7 @@ def add_legend(m):
             display:inline-block;
             margin-right:8px;
         "></span>
-        Within 20 km
+        Other Data Zones
     </div>
 
     <div style="margin-top:4px;">
@@ -237,16 +245,13 @@ def add_legend(m):
     m.get_root().html.add_child(folium.Element(legend_html))
 
 
-def add_tooltip_style(m):
+def add_tooltip_style_network(m):
     """
-    Add custom CSS to improve tooltip formatting, remove click-focus outlines
-    and define reusable map UI styling.
+    Add custom CSS to improve tooltip formatting and interactive behaviour.
 
-    This styling prevents line wrapping in tooltip labels and values,
-    allows the tooltip box to expand to fit longer text, removes
-    visible focus outlines when map features are clicked and
-    defines positioning for custom interface elements such as
-    the reset button.
+    This styling enhances tooltip readability, prevents text wrapping,
+    removes focus outlines and defines reusable UI styling for the
+    network interactive map.
 
     Parameters
     ----------
@@ -306,7 +311,7 @@ def add_tooltip_style(m):
     m.get_root().html.add_child(folium.Element(tooltip_css))
 
 
-def add_reset_button(m, center, zoom):
+def add_reset_button_network(m, center, zoom):
     """
     Add a reset view button to return the map to its original extent.
 
@@ -356,12 +361,12 @@ def add_reset_button(m, center, zoom):
     m.get_root().html.add_child(folium.Element(reset_js + button_html))
 
 
-def add_metric_scale_bar(m):
+def add_metric_scale_bar_network(m):
     """
     Add a metric-only scale bar to the interactive map.
 
     This replaces the default Folium scale bar, displays distance
-    in kilometres only, and aligns the scale bar with other map elements.
+    in kilometres only and aligns the scale bar with other map elements.
 
     Parameters
     ----------
