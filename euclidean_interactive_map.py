@@ -63,29 +63,10 @@ def highlight_function_euclidean(feature):
 def add_datazones_layer_euclidean(m, dz_wgs84):
     """
     Add Data Zone polygons to the interactive map with Euclidean accessibility attributes.
-
-    Tooltips display key attributes including Data Zone name, Data Zone code,
-    local council, Euclidean distance to the nearest hospital (in km)
-    and the population living beyond 20 km.
-
-    The function validates that all required fields are present before creating
-    the map layer.
-
-    Parameters
-    ----------
-    m : folium.Map
-        Folium map object.
-    dz_wgs84 : gpd.GeoDataFrame
-        Data Zones converted to WGS84 coordinate reference system.
-
-    Returns
-    -------
-    None
-        The layer is added directly to the map.
     """
 
     required_fields = [
-        "DZ2021_nm",
+        "data_zone_name",
         "DZ2021_cd",
         "LGD2014_nm",
         "nearest_hospital_km",
@@ -104,7 +85,7 @@ def add_datazones_layer_euclidean(m, dz_wgs84):
         highlight_function=highlight_function_euclidean,
         tooltip=folium.GeoJsonTooltip(
             fields=[
-                "DZ2021_nm",
+                "data_zone_name",
                 "DZ2021_cd",
                 "LGD2014_nm",
                 "nearest_hospital_km",
@@ -208,7 +189,7 @@ def add_legend_euclidean(m):
             display:inline-block;
             margin-right:8px;
         "></span>
-        More than 20 km from hospital
+        More than 20 km from nearest hospital
     </div>
 
     <div>

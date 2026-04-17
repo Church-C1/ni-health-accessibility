@@ -12,7 +12,9 @@ def summarise_by_region(
     group_col: str,
     population_col: str,
     affected_col: str,
-    affected_flag_col: str
+    affected_flag_col: str,
+    sort_by: str = "affected_population",
+    ascending: bool = False
 ) -> pd.DataFrame:
     """
     Summarise accessibility results by a regional grouping.
@@ -29,6 +31,17 @@ def summarise_by_region(
         Column representing population in poor-access areas.
     affected_flag_col : str
         Boolean column indicating whether a Data Zone is classified as poor access.
+    sort_by : str, optional
+        Column used to sort the summary output. Defaults to "affected_population".
+        Valid options are:
+        - "affected_population"
+        - "pct_population_affected"
+        - "affected_datazones"
+        - "pct_datazones_affected"
+        - "total_population"
+        - "total_datazones"
+    ascending : bool, optional
+        Sort order. False = descending (default).
 
     Returns
     -------
@@ -57,9 +70,25 @@ def summarise_by_region(
         summary["affected_datazones"] / summary["total_datazones"] * 100
     ).round(2)
 
-    # Sort by affected population (descending)
+    valid_sort_cols = {
+        "total_population",
+        "affected_population",
+        "total_datazones",
+        "affected_datazones",
+        "pct_population_affected",
+        "pct_datazones_affected"
+    }
+
+    if sort_by not in valid_sort_cols:
+        raise ValueError(
+            f"Invalid sort_by value: '{sort_by}'. "
+            f"Choose from: {sorted(valid_sort_cols)}"
+        )
+
+    # Sort summary output
     summary = summary.sort_values(
-        "affected_population", ascending=False
+        sort_by,
+        ascending=ascending
     ).reset_index(drop=True)
 
     return summary
