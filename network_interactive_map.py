@@ -365,8 +365,8 @@ def add_metric_scale_bar_network(m):
     """
     Add a metric-only scale bar to the interactive map.
 
-    This replaces the default Folium scale bar, displays distance
-    in kilometres only and aligns the scale bar with other map elements.
+    This replaces the default Folium scale bar, displays map distance
+    in metric units only and aligns the scale bar with other map elements.
 
     Parameters
     ----------

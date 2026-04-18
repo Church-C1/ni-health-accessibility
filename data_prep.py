@@ -108,6 +108,8 @@ def clean_hospitals(hospitals: gpd.GeoDataFrame, dz: gpd.GeoDataFrame) -> gpd.Ge
         hospitals.geometry.type.isin(["Point", "Polygon", "MultiPolygon"])
     ]
 
+    # Copy dataset before updating geometry (ensures safe assignment)
+    hospitals = hospitals.copy()
     hospitals["geometry"] = hospitals.geometry.representative_point()
 
     hospitals = hospitals.to_crs(dz.crs)
