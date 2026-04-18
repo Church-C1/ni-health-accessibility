@@ -85,7 +85,7 @@ def add_datazones_layer_network(m, dz_wgs84):
     """
 
     required_fields = [
-        "DZ2021_nm",
+        "data_zone_name",  # Use cleaned Data Zone names (underscores removed)
         "DZ2021_cd",
         "LGD2014_nm",
         "accessibility_index",
@@ -107,7 +107,7 @@ def add_datazones_layer_network(m, dz_wgs84):
         highlight_function=highlight_function_network,
         tooltip=folium.GeoJsonTooltip(
             fields=[
-                "DZ2021_nm",
+                "data_zone_name",  # Use cleaned Data Zone names
                 "DZ2021_cd",
                 "LGD2014_nm",
                 "accessibility_index",
@@ -365,8 +365,8 @@ def add_metric_scale_bar_network(m):
     """
     Add a metric-only scale bar to the interactive map.
 
-    This replaces the default Folium scale bar, displays distance
-    in kilometres only and aligns the scale bar with other map elements.
+    This replaces the default Folium scale bar, displays map distance
+    in metric units only and aligns the scale bar with other map elements.
 
     Parameters
     ----------
