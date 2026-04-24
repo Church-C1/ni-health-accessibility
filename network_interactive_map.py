@@ -1,5 +1,5 @@
 """
-Network Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
+Network-Based Interactive Map Functions for the Northern Ireland Healthcare Accessibility Project.
 
 This module contains functions used to construct and style an interactive Folium map
 for the network-based accessibility analysis.
@@ -107,7 +107,7 @@ def add_datazones_layer_network(m, dz_wgs84):
         highlight_function=highlight_function_network,
         tooltip=folium.GeoJsonTooltip(
             fields=[
-                "data_zone_name",  # Use cleaned Data Zone names
+                "data_zone_name",
                 "DZ2021_cd",
                 "LGD2014_nm",
                 "accessibility_index",
@@ -251,7 +251,7 @@ def add_tooltip_style_network(m):
 
     This styling enhances tooltip readability, prevents text wrapping,
     removes focus outlines and defines reusable UI styling for the
-    network interactive map.
+    network-based interactive map.
 
     Parameters
     ----------

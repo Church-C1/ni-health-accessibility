@@ -63,6 +63,25 @@ def highlight_function_euclidean(feature):
 def add_datazones_layer_euclidean(m, dz_wgs84):
     """
     Add Data Zone polygons to the interactive map with Euclidean accessibility attributes.
+
+    Tooltips display key attributes including Data Zone name, Data Zone code,
+    local council, distance to the nearest hospital and the population living
+    more than 20 km from a hospital.
+
+    The function validates that all required fields are present before creating
+    the map layer.
+
+    Parameters
+    ----------
+    m : folium.Map
+        Folium map object.
+    dz_wgs84 : gpd.GeoDataFrame
+        Data Zones converted to WGS84 coordinate reference system.
+
+    Returns
+    -------
+    None
+        The layer is added directly to the map.
     """
 
     required_fields = [

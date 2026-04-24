@@ -132,6 +132,21 @@ def add_county_names_from_boundaries(
 ) -> gpd.GeoDataFrame:
     """
     Assign county names to Data Zones using a spatial join.
+
+    Representative points are used so that each Data Zone is assigned to the
+    county containing its internal point.
+
+    Parameters
+    ----------
+    dz : gpd.GeoDataFrame
+        Data Zone polygons.
+    counties : gpd.GeoDataFrame
+        County boundary polygons.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Data Zones with county names added.
     """
 
     dz = dz.copy()

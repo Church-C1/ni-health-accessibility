@@ -79,7 +79,7 @@ def prepare_road_geometries(roads: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     This function explodes multipart geometries into individual features,
     removes null geometries and retains only LineString features suitable
-    for network building.
+    for network-based analysis.
 
     Parameters
     ----------
