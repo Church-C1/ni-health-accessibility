@@ -60,12 +60,12 @@ def summarise_by_region(
         .reset_index()
     )
 
-    # Calculate percentage of population affected
+    # Population affected as a percentage
     summary["pct_population_affected"] = (
         summary["affected_population"] / summary["total_population"] * 100
     ).round(2)
 
-    # Calculate percentage of Data Zones affected
+    # Data Zones affected as a percentage
     summary["pct_datazones_affected"] = (
         summary["affected_datazones"] / summary["total_datazones"] * 100
     ).round(2)
@@ -85,7 +85,7 @@ def summarise_by_region(
             f"Choose from: {sorted(valid_sort_cols)}"
         )
 
-    # Sort summary output
+    # Sorted summary output
     summary = summary.sort_values(
         sort_by,
         ascending=ascending
@@ -116,7 +116,7 @@ def format_summary_table(
 
     formatted = summary_df.copy()
 
-    # Rename first column (group column) and metrics for readability
+    # Display-ready column names
     first_col = formatted.columns[0]
 
     formatted = formatted.rename(columns={

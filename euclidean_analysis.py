@@ -58,7 +58,7 @@ def calculate_nearest_hospital_distance(dz: gpd.GeoDataFrame, hospitals: gpd.Geo
     dz["nearest_hospital_m"] = nearest["nearest_hospital_m"].values
     dz["nearest_hospital_km"] = (dz["nearest_hospital_m"] / 1000).round(2)
 
-    # Remove temporary centroid column used for distance calculation
+    # Remove temporary representative point column used for distance calculation
     dz = dz.drop(columns=["zone_point"], errors="ignore")
 
     return dz

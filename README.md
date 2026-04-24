@@ -4,10 +4,10 @@
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Complete-success)
 
-This project analyses accessibility to hospitals across Northern Ireland using two approaches:
+This project analyses access to hospitals across Northern Ireland using two approaches:
 
 - Euclidean (straight-line distance)
-- Network-based accessibility (index-based)
+- Network-based accessibility (cost-distance accessibility index derived from the road network)
 
 It demonstrates how methodological choice influences the identification of areas with relatively poor access to healthcare.
 
@@ -15,23 +15,24 @@ It demonstrates how methodological choice influences the identification of areas
 
 ## Project Overview
 
-Healthcare accessibility is often assessed using simple distance-based measures, which can oversimplify real-world movement. This project contrasts a straight-line approach with a network-based accessibility model to examine how each method classifies access to hospitals.
+This analysis focuses on hospitals as a proxy for healthcare accessibility. Healthcare accessibility is often assessed using simple distance-based measures, which can oversimplify how accessibility is shaped by the structure of the transport network. This project contrasts a straight-line approach with a network-based accessibility model to examine how each method classifies access to hospitals.
 
 ---
 
 ## Key Findings
 
 - Euclidean analysis identifies ~4% of the population as having poor access  
-- Network-based analysis identifies ~20%  
-- Euclidean distance substantially underestimates accessibility constraints
+- Network-based analysis identifies ~20% of the population as having poor access  
+- Euclidean distance substantially underestimates the extent of poor accessibility
+- This demonstrates that incorporating network structure significantly increases the number of areas identified as having poor accessibility.
 
 ---
 
 ## Analysis Objectives
 
 - Calculate Euclidean distance from each Data Zone to the nearest hospital
-- Derive a network-based accessibility measure using the road network
-- Identify areas classified as having relatively poor access
+- Derive a network-based accessibility index using the road network structure
+- Identify areas with relatively poor access
 - Compare results between the two methods
 - Produce maps, tables, and summary outputs
 
@@ -42,13 +43,13 @@ Healthcare accessibility is often assessed using simple distance-based measures,
 ```
 ni-health-accessibility/
 │
-├── healthcare_access_analysis.ipynb
-├── data_prep.py
-├── euclidean_analysis.py
-├── network_analysis.py
-├── euclidean_interactive_map.py
-├── network_interactive_map.py
-├── reporting_utilities.py
+├── healthcare_access_analysis.ipynb # Main analysis notebook
+├── data_prep.py # Data preparation functions
+├── euclidean_analysis.py # Euclidean accessibility analysis
+├── network_analysis.py # Network-based accessibility analysis
+├── euclidean_interactive_map.py # Euclidean interactive map generation
+├── network_interactive_map.py # Network-based interactive map generation
+├── reporting_utilities.py # Supporting functions for outputs and reporting
 ├── README.md
 ├── LICENSE
 ├── .gitignore
@@ -113,10 +114,11 @@ This project uses Python with the following libraries:
 - rasterstats  
 - scikit-image  
 - osmnx  
-- openpyxl  
+- openpyxl
+- IPython  
 
 ### Environment
-- jupyter  
+- jupyterlab
 
 ---
 
@@ -147,7 +149,7 @@ jupyter lab
 
 healthcare_access_analysis.ipynb  
 
-Run all cells in order.
+Run all cells sequentially.
 
 ---
 
@@ -160,7 +162,7 @@ Data Zones and population data are merged. Hospital locations are retrieved from
 Straight-line distance to the nearest hospital is calculated and a threshold is applied to identify poor access.
 
 ### Network analysis
-The road network is processed and used to derive an accessibility index based on movement through the network.
+The road network is processed to derive an accessibility index based on a cost-distance representation of movement across the network.
 
 ### Mapping and outputs
 Interactive maps and summary tables are generated to support comparison between methods.
@@ -180,8 +182,8 @@ Running the notebook produces:
 
 ## Key Concept
 
-- Euclidean method measures **distance**  
-- Network method measures **accessibility (not distance)**  
+- Euclidean method measures **straight-line distance**
+- Network method measures **relative accessibility (not physical distance)**
 
 ---
 
@@ -198,7 +200,7 @@ To reproduce this analysis:
 
 ## License
 
-This repository includes an open-source license.
+This project is licensed under the MIT License.
 
 ---
 
