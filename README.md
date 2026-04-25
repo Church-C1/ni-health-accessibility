@@ -115,7 +115,9 @@ This project uses Python with the following libraries:
 - scikit-image  
 - osmnx  
 - openpyxl
-- IPython  
+
+These libraries support data processing, spatial analysis, visualisation and 
+interactive execution within the Jupyter Notebook environment.
 
 ### Environment
 - jupyterlab
