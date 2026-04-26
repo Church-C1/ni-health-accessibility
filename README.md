@@ -21,10 +21,10 @@ This analysis focuses on hospitals as a proxy for healthcare accessibility. Heal
 
 ## Key Findings
 
-- Euclidean analysis identifies ~4% of the population as having poor access  
-- Network-based analysis identifies ~20% of the population as having poor access  
-- Euclidean distance substantially underestimates the extent of poor accessibility
-- This demonstrates that incorporating network structure significantly increases the number of areas identified as having poor accessibility.
+- Euclidean analysis identifies ~4% of the population as living in areas with poor access 
+- Network-based analysis identifies ~20% of the population as living in areas with relatively poor access  
+- The two methods classify accessibility differently due to the use of absolute (distance-based) and relative (index-based) thresholds  
+- The network-based approach highlights additional areas of comparatively lower accessibility that are not identified using a fixed distance threshold 
 
 ---
 
@@ -161,10 +161,13 @@ Run all cells sequentially.
 Data Zones and population data are merged. Hospital locations are retrieved from OpenStreetMap and cleaned.
 
 ### Euclidean analysis
-Straight-line distance to the nearest hospital is calculated and a threshold is applied to identify poor access.
+Straight-line distance from each Data Zone to the nearest hospital is calculated and a fixed threshold is
+applied to identify areas with poor access.
 
 ### Network analysis
-The road network is processed to derive an accessibility index based on a cost-distance representation of movement across the network.
+The road network is used to generate a raster cost-distance surface, which is summarised for each Data Zone and
+converted into a normalised accessibility index. This index represents relative accessibility, where higher values
+indicate poorer access.
 
 ### Mapping and outputs
 Interactive maps and summary tables are generated to support comparison between methods.
